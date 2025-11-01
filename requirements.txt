@@ -1,0 +1,24 @@
+# Core Framework
+fastapi==0.104.1
+uvicorn[standard]==0.24.0
+pydantic==2.5.0
+pydantic-settings==2.1.0
+
+# HTTP Client for inter-service communication
+httpx==0.25.2
+
+# Database
+sqlalchemy==2.0.23
+psycopg2-binary==2.9.9
+
+# Environment variables
+python-dotenv==1.0.0
+
+# Observability
+prometheus-fastapi-instrumentator==6.1.0
+
+# PDF Processing
+pdfplumber==0.10.3
+
+# Utilities
+python-multipart==0.0.6
