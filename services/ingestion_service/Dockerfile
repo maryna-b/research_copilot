@@ -5,7 +5,8 @@ WORKDIR /app
 COPY ../../requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-COPY services/ingestion_service/main.py .
+# Copy all ingestion service modules
+COPY services/ingestion_service/*.py .
 
 EXPOSE 8001
 

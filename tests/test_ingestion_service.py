@@ -2,10 +2,15 @@
 Tests for Ingestion Service - Utility Functions.
 """
 from pathlib import Path
+import sys
 import importlib.util
 
+# Add ingestion_service directory to Python path so imports work
+ingestion_service_dir = Path(__file__).parent.parent / "services" / "ingestion_service"
+sys.path.insert(0, str(ingestion_service_dir))
+
 # Load the ingestion service main module directly
-ingestion_main_path = Path(__file__).parent.parent / "services" / "ingestion_service" / "main.py"
+ingestion_main_path = ingestion_service_dir / "main.py"
 spec = importlib.util.spec_from_file_location("ingestion_main", ingestion_main_path)
 ingestion_main = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(ingestion_main)

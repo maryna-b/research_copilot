@@ -1,71 +1,33 @@
+"""
+Ingestion Service - PDF processing and text extraction.
+"""
 from fastapi import FastAPI, UploadFile, File, HTTPException
 import pdfplumber
 from io import BytesIO
-from datetime import datetime
-import os
 
-from sqlalchemy import create_engine, Column, Integer, String, DateTime
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker
+from config import settings
+from database import Base, engine, SessionLocal
+from models import Document
+from schemas import HealthResponse, ProcessPDFResponse, DocumentListItem, ChunkResponse
+from utils import chunk_text
 
-app = FastAPI(title="Ingestion Service")
-
-DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./documents.db")
-
-if DATABASE_URL.startswith("sqlite"):
-    engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False})
-else:
-    engine = create_engine(DATABASE_URL)
-
-SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-Base = declarative_base()
-
-
-class Document(Base):
-    """
-    Stores metadata about processed documents.
-    """
-    __tablename__ = "documents"
-
-    id = Column(Integer, primary_key=True, index=True)
-    filename = Column(String, index=True)
-    total_pages = Column(Integer)
-    total_chunks = Column(Integer)
-    uploaded_at = Column(DateTime, default=datetime.utcnow)
-
-
+# Create database tables
 Base.metadata.create_all(bind=engine)
 
+# Initialize FastAPI app
+app = FastAPI(
+    title=settings.SERVICE_NAME,
+    version=settings.SERVICE_VERSION
+)
 
-def chunk_text(text: str, chunk_size: int = 1000, overlap: int = 100) -> list[str]:
-    """
-    Split text into overlapping chunks.
 
-    Args:
-        text: The text to chunk
-        chunk_size: Size of each chunk in characters
-        overlap: Number of characters to overlap between chunks
-
-    Returns:
-        List of text chunks
-    """
-    chunks = []
-    start = 0
-
-    while start < len(text):
-        end = start + chunk_size
-        chunk = text[start:end]
-        chunks.append(chunk)
-        start = end - overlap 
-
-    return chunks
-
-@app.get("/health")
+@app.get("/health", response_model=HealthResponse)
 async def health():
-    return {"status": "ok", "service": "ingestion-service"}
+    """Health check endpoint."""
+    return {"status": "ok", "service": settings.SERVICE_NAME}
 
 
-@app.get("/documents")
+@app.get("/documents", response_model=list[DocumentListItem])
 async def list_documents():
     """
     List all processed documents with metadata.
@@ -86,7 +48,8 @@ async def list_documents():
     finally:
         db.close()
 
-@app.post("/process_pdf")
+
+@app.post("/process_pdf", response_model=ProcessPDFResponse)
 async def process_pdf(file: UploadFile = File(...)):
     """
     Extract text from PDF file and return text chunks.
@@ -103,22 +66,28 @@ async def process_pdf(file: UploadFile = File(...)):
     content = await file.read()
 
     try:
-        # Extract text
+        # Extract text from PDF
         with pdfplumber.open(BytesIO(content)) as pdf:
             text_by_page = []
             for page_num, page in enumerate(pdf.pages, start=1):
                 text = page.extract_text()
-                if text: 
+                if text:
                     text_by_page.append({
                         "page": page_num,
                         "text": text
                     })
 
+        # Combine all pages into single text
         full_text = " ".join([page["text"] for page in text_by_page])
 
-        chunks = chunk_text(full_text)
+        # Chunk the text
+        chunks = chunk_text(
+            full_text,
+            chunk_size=settings.CHUNK_SIZE,
+            overlap=settings.CHUNK_OVERLAP
+        )
 
-        # Save to database
+        # Save metadata to database
         db = SessionLocal()
         try:
             doc = Document(
@@ -128,11 +97,12 @@ async def process_pdf(file: UploadFile = File(...)):
             )
             db.add(doc)
             db.commit()
-            db.refresh(doc)  
+            db.refresh(doc)
             document_id = doc.id
         finally:
             db.close()
 
+        # Build response
         return {
             "document_id": document_id,
             "filename": file.filename,

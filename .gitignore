@@ -47,6 +47,7 @@ env/
 # OS
 .DS_Store
 Thumbs.db
+*.stackdump
 
 # Testing
 .pytest_cache/
@@ -57,8 +58,9 @@ htmlcov/
 logs/
 *.log
 
-# Development docs
+# Development docs (optional - keep local planning docs private)
 DEVELOPMENT_GUIDE.md
 WEEK1_CHECKLIST.md
 WEEK1_SUMMARY.md
 WEEK1.5_PLAN.md
+VERIFICATION_CHECKLIST.md
