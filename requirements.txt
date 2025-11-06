@@ -3,6 +3,7 @@ fastapi==0.104.1
 uvicorn[standard]==0.24.0
 pydantic==2.5.0
 pydantic-settings==2.1.0
+starlette==0.27.0  # Pin compatible version
 
 # HTTP Client for inter-service communication
 httpx==0.25.2
@@ -22,3 +23,8 @@ pdfplumber==0.10.3
 
 # Utilities
 python-multipart==0.0.6
+
+# Testing
+pytest==7.4.3
+pytest-asyncio==0.21.1
+pytest-cov==4.1.0
