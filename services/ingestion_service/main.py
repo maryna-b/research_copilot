@@ -1,9 +1,11 @@
 """
 Ingestion Service - PDF processing and text extraction.
 """
-from fastapi import FastAPI, UploadFile, File, HTTPException
+from fastapi import FastAPI, UploadFile, File, HTTPException, Response
 import pdfplumber
 from io import BytesIO
+from prometheus_fastapi_instrumentator import Instrumentator
+from prometheus_client import generate_latest, CONTENT_TYPE_LATEST
 
 from config import settings
 from database import Base, engine, SessionLocal
@@ -19,6 +21,26 @@ app = FastAPI(
     title=settings.SERVICE_NAME,
     version=settings.SERVICE_VERSION
 )
+
+# Initialize Prometheus metrics
+instrumentator = Instrumentator(
+    should_group_status_codes=False,
+    should_ignore_untemplated=True,
+    should_respect_env_var=True,
+    should_instrument_requests_inprogress=True,
+    excluded_handlers=["/metrics"],
+    env_var_name="ENABLE_METRICS",
+    inprogress_name="http_requests_inprogress",
+    inprogress_labels=True,
+)
+
+instrumentator.instrument(app)
+
+
+@app.get("/metrics")
+async def metrics():
+    """Prometheus metrics endpoint."""
+    return Response(content=generate_latest(), media_type=CONTENT_TYPE_LATEST)
 
 
 @app.get("/health", response_model=HealthResponse)

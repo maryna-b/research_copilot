@@ -17,6 +17,7 @@ api_key_header = APIKeyHeader(name="X-API-Key", auto_error=False)
 # Public endpoints that don't require authentication
 PUBLIC_ENDPOINTS = {
     "/health",
+    "/metrics",  # Prometheus metrics endpoint
     "/docs",
     "/openapi.json",
     "/redoc"

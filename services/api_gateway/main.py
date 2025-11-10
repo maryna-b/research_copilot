@@ -1,9 +1,11 @@
-from fastapi import FastAPI, UploadFile, File, HTTPException, Request
+from fastapi import FastAPI, UploadFile, File, HTTPException, Request, Response
 import httpx
 import os
 import logging
 import uuid
 import time
+from prometheus_fastapi_instrumentator import Instrumentator
+from prometheus_client import generate_latest, CONTENT_TYPE_LATEST
 
 from auth import verify_api_key
 
@@ -15,6 +17,21 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 app = FastAPI(title="API Gateway", version="0.1.0")
+
+# Initialize Prometheus metrics
+instrumentator = Instrumentator(
+    should_group_status_codes=False,
+    should_ignore_untemplated=True,
+    should_respect_env_var=True,
+    should_instrument_requests_inprogress=True,
+    excluded_handlers=["/metrics"],  # Don't track metrics endpoint itself
+    env_var_name="ENABLE_METRICS",
+    inprogress_name="http_requests_inprogress",
+    inprogress_labels=True,
+)
+
+# Instrument the app and expose metrics
+instrumentator.instrument(app).expose(app, endpoint="/metrics", include_in_schema=False)
 
 INGESTION_SERVICE_URL = os.getenv("INGESTION_SERVICE_URL", "http://localhost:8001")
 
@@ -69,6 +86,12 @@ async def authenticate_and_log(request: Request, call_next):
         raise
     finally:
         logging.setLogRecordFactory(old_factory)
+
+@app.get("/metrics")
+async def metrics():
+    """Prometheus metrics endpoint."""
+    return Response(content=generate_latest(), media_type=CONTENT_TYPE_LATEST)
+
 
 @app.get("/health")
 async def health():
