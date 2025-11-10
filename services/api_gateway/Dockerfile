@@ -5,7 +5,8 @@ WORKDIR /app
 COPY ../../requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-COPY /services/api_gateway/main.py .
+# Copy all API Gateway modules
+COPY services/api_gateway/*.py .
 
 EXPOSE 8000
 

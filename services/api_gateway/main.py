@@ -5,6 +5,8 @@ import logging
 import uuid
 import time
 
+from auth import verify_api_key
+
 # Configure structured logging
 logging.basicConfig(
     level=logging.INFO,
@@ -22,8 +24,8 @@ ALLOWED_EXTENSIONS = {".pdf"}
 
 
 @app.middleware("http")
-async def log_requests(request: Request, call_next):
-    """Log all requests with timing and request ID for tracing."""
+async def authenticate_and_log(request: Request, call_next):
+    """Authenticate requests and log with timing and request ID for tracing."""
     request_id = str(uuid.uuid4())
     request.state.request_id = request_id
 
@@ -42,6 +44,9 @@ async def log_requests(request: Request, call_next):
     logger.info(f"Request started: {request.method} {request.url.path}")
 
     try:
+        # Verify API key before processing request
+        await verify_api_key(request)
+
         response = await call_next(request)
         process_time = time.time() - start_time
 

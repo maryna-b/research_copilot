@@ -48,6 +48,8 @@ services:
       - "8000:8000"
     environment:
       INGESTION_SERVICE_URL: http://ingestion-service:8001
+      API_KEY: ${API_KEY:-dev-key-change-in-production}
+      MAX_FILE_SIZE: ${MAX_FILE_SIZE:-52428800}
     depends_on:
       - ingestion-service
     networks:
