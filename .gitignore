@@ -58,10 +58,6 @@ htmlcov/
 logs/
 *.log
 
-# Development docs (optional - keep local planning docs private)
-DEVELOPMENT_GUIDE.md
-WEEK1_CHECKLIST.md
-WEEK1_SUMMARY.md
-WEEK1.5_PLAN.md
-VERIFICATION_CHECKLIST.md
-AUTH_TESTING.md
+# Documentation (keep local planning docs private)
+documentation/
+DOCUMENTATION_SUMMARY.md
