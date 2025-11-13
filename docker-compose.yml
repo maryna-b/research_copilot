@@ -56,8 +56,41 @@ services:
       - research-copilot-network
     restart: unless-stopped
 
+  # Chroma Vector Database
+  chroma:
+    image: chromadb/chroma:0.5.23
+    container_name: research-copilot-chroma
+    ports:
+      - "8002:8000"
+    volumes:
+      - chroma_data:/chroma/chroma
+    environment:
+      - IS_PERSISTENT=TRUE
+    networks:
+      - research-copilot-network
+    restart: unless-stopped
+
+  # Embeddings Service
+  embeddings-service:
+    build:
+      context: .
+      dockerfile: services/embeddings_service/Dockerfile
+    container_name: research-copilot-embeddings
+    ports:
+      - "8003:8003"
+    environment:
+      CHROMA_HOST: chroma
+      CHROMA_PORT: 8000
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+    depends_on:
+      - chroma
+    networks:
+      - research-copilot-network
+    restart: unless-stopped
+
 volumes:
   postgres_data:
+  chroma_data:
 
 networks:
   research-copilot-network:
