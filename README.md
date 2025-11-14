@@ -67,9 +67,9 @@ Client → API Gateway ┬→ Ingestion Service → PostgreSQL
 **Services:**
 - **API Gateway** (Port 8000) - Routing, authentication, logging
 - **Ingestion Service** (Port 8001) - PDF processing, text extraction
-- **Query Service** (Port 8003) - Semantic search, QA *(Week 2)*
+- **Query Service** (Port 8003) - Semantic search, QA 
 - **PostgreSQL** (Port 5432) - Document metadata
-- **Chroma** (Port 8002) - Vector embeddings *(Week 2)*
+- **Chroma** (Port 8002) - Vector embeddings
 
 ---
 
@@ -77,7 +77,7 @@ Client → API Gateway ┬→ Ingestion Service → PostgreSQL
 
 ### Prerequisites
 - Docker & Docker Compose
-- Python 3.11+ for local development
+- Python 3.11+ 
 
 ### Run with Docker Compose
 
@@ -142,7 +142,7 @@ curl -X POST http://localhost:8000/upload \
 
 ### Planned 
 - **Chroma** - Vector database
-- **Sentence Transformers / OpenAI** - Text embeddings
+- **OpenAI** - Text embeddings
 - **LangChain** - LLM orchestration
 - **LangGraph** - Multi-agent workflows
 - **OpenAI GPT-3.5/4** - Question answering
@@ -191,8 +191,6 @@ pytest --cov=services --cov-report=html
 
 - API Gateway: http://localhost:8000/metrics
 - Ingestion Service: http://localhost:8001/metrics
-
-See [Metrics Guide](./documentation/METRICS_GUIDE.md) for details.
 
 ### Logs
 
