@@ -26,7 +26,15 @@ PUBLIC_ENDPOINTS = {
 
 def is_public_endpoint(path: str) -> bool:
     """Check if endpoint is public and doesn't require authentication."""
-    return path in PUBLIC_ENDPOINTS
+    # Check exact match
+    if path in PUBLIC_ENDPOINTS:
+        return True
+
+    # Also allow static files for docs UI
+    if path.startswith("/docs") or path.startswith("/redoc") or path.startswith("/openapi"):
+        return True
+
+    return False
 
 
 async def verify_api_key(request: Request) -> None:
