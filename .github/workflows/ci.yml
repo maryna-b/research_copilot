@@ -22,19 +22,19 @@ jobs:
         cat > .env << EOF
         POSTGRES_USER=research_user
         POSTGRES_PASSWORD=research_pass
-        POSTGRES_DB=research_db
+        POSTGRES_DB=research_copilot
         API_KEY=test-key
         OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }}
         EOF
 
     - name: Start services
-      run: docker-compose up -d --build
+      run: docker compose up -d --build
 
     - name: Wait for services to be ready
       run: |
         echo "Waiting for services..."
         sleep 30
-        docker-compose ps
+        docker compose ps
 
     - name: Run health checks
       run: |
@@ -56,7 +56,7 @@ jobs:
 
     - name: Check database
       run: |
-        docker exec research-copilot-db psql -U research_user -d research_db -c "SELECT 1"
+        docker exec research-copilot-db psql -U research_user -d research_copilot -c "SELECT 1"
 
     - name: Check logs for errors
       run: |
@@ -66,4 +66,4 @@ jobs:
 
     - name: Cleanup
       if: always()
-      run: docker-compose down -v
+      run: docker compose down -v
