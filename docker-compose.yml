@@ -31,9 +31,12 @@ services:
       - "8001:8001"
     environment:
       DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+      EMBEDDINGS_SERVICE_URL: http://embeddings-service:8003
     depends_on:
       postgres:
         condition: service_healthy
+      embeddings-service:
+        condition: service_started
     networks:
       - research-copilot-network
     restart: unless-stopped
@@ -48,10 +51,12 @@ services:
       - "8000:8000"
     environment:
       INGESTION_SERVICE_URL: http://ingestion-service:8001
+      EMBEDDINGS_SERVICE_URL: http://embeddings-service:8003
       API_KEY: ${API_KEY:-dev-key-change-in-production}
       MAX_FILE_SIZE: ${MAX_FILE_SIZE:-52428800}
     depends_on:
       - ingestion-service
+      - embeddings-service
     networks:
       - research-copilot-network
     restart: unless-stopped

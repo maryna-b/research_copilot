@@ -6,12 +6,17 @@ import pdfplumber
 from io import BytesIO
 from prometheus_fastapi_instrumentator import Instrumentator
 from prometheus_client import generate_latest, CONTENT_TYPE_LATEST
+import httpx
+import os
 
 from config import settings
 from database import Base, engine, SessionLocal
 from models import Document
 from schemas import HealthResponse, ProcessPDFResponse, DocumentListItem, ChunkResponse
 from utils import chunk_text
+
+# Embeddings service URL
+EMBEDDINGS_SERVICE_URL = os.getenv("EMBEDDINGS_SERVICE_URL", "http://embeddings-service:8003")
 
 # Create database tables
 Base.metadata.create_all(bind=engine)
@@ -123,6 +128,34 @@ async def process_pdf(file: UploadFile = File(...)):
             document_id = doc.id
         finally:
             db.close()
+
+        # Send chunks to embeddings service for vector storage
+        embed_chunks = [
+            {
+                "chunk_id": f"{document_id}_chunk_{i}",
+                "text": chunk,
+                "metadata": {
+                    "document_id": document_id,
+                    "filename": file.filename,
+                    "chunk_index": i,
+                    "total_chunks": len(chunks)
+                }
+            }
+            for i, chunk in enumerate(chunks)
+        ]
+
+        try:
+            async with httpx.AsyncClient(timeout=30.0) as client:
+                embed_response = await client.post(
+                    f"{EMBEDDINGS_SERVICE_URL}/embed",
+                    json={"chunks": embed_chunks}
+                )
+                embed_response.raise_for_status()
+                embedding_success = True
+        except Exception as e:
+            # Log error but don't fail the whole request
+            print(f"Warning: Failed to generate embeddings: {str(e)}")
+            embedding_success = False
 
         # Build response
         return {

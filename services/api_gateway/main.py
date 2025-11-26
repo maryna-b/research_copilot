@@ -34,6 +34,7 @@ instrumentator = Instrumentator(
 instrumentator.instrument(app).expose(app, endpoint="/metrics", include_in_schema=False)
 
 INGESTION_SERVICE_URL = os.getenv("INGESTION_SERVICE_URL", "http://localhost:8001")
+EMBEDDINGS_SERVICE_URL = os.getenv("EMBEDDINGS_SERVICE_URL", "http://embeddings-service:8003")
 
 # File upload limits
 MAX_FILE_SIZE = int(os.getenv("MAX_FILE_SIZE", 50 * 1024 * 1024))  # 50MB default
@@ -217,4 +218,65 @@ async def upload_file(file: UploadFile = File(...)):
         raise HTTPException(
             status_code=500,
             detail="An unexpected error occurred. Please contact support."
+        )
+
+
+@app.post("/search")
+async def search(query: str, n_results: int = 5):
+    """
+    Search for relevant document chunks using semantic similarity.
+
+    Args:
+        query: The search query text
+        n_results: Number of results to return (default: 5)
+
+    Returns:
+        Search results with relevant document chunks ranked by similarity
+    """
+    logger.info(f"Search started: query='{query}' n_results={n_results}")
+
+    try:
+        # Forward to embeddings service
+        async with httpx.AsyncClient(timeout=30.0) as client:
+            try:
+                response = await client.post(
+                    f"{EMBEDDINGS_SERVICE_URL}/search",
+                    json={"query": query, "n_results": n_results}
+                )
+
+                if response.status_code != 200:
+                    logger.error(
+                        f"Embeddings service error: status={response.status_code} "
+                        f"detail={response.text}"
+                    )
+                    raise HTTPException(
+                        status_code=response.status_code,
+                        detail="Search failed. Please try again."
+                    )
+
+                result = response.json()
+                logger.info(f"Search successful: found {result.get('total_results', 0)} results")
+                return result
+
+            except httpx.TimeoutException:
+                logger.error(f"Timeout connecting to embeddings service: {EMBEDDINGS_SERVICE_URL}")
+                raise HTTPException(
+                    status_code=504,
+                    detail="Search timeout. Please try again."
+                )
+
+            except httpx.RequestError as e:
+                logger.error(f"Connection error to embeddings service: {str(e)}")
+                raise HTTPException(
+                    status_code=503,
+                    detail="Search service temporarily unavailable. Please try again later."
+                )
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Unexpected error during search: {str(e)}", exc_info=True)
+        raise HTTPException(
+            status_code=500,
+            detail="An unexpected error occurred during search."
         )
