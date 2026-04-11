@@ -239,9 +239,3 @@ docker-compose up --build
 - [ ] Agent workflows (LangGraph)
 - [ ] Cloud deployment
 - [ ] Web UI
-
----
-
-## License
-
-MIT
