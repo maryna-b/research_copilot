@@ -38,6 +38,7 @@ class SearchResult(BaseModel):
     text: str
     metadata: Dict[str, Any]
     distance: float
+    similarity: float
 
 class SearchResponse(BaseModel):
     query: str
@@ -118,11 +119,13 @@ async def search_chunks(request: SearchRequest):
         search_results = []
         if results['ids'] and len(results['ids'][0]) > 0:
             for i in range(len(results['ids'][0])):
+                distance = results['distances'][0][i]
                 search_results.append(SearchResult(
                     chunk_id=results['ids'][0][i],
                     text=results['documents'][0][i],
                     metadata=results['metadatas'][0][i],
-                    distance=results['distances'][0][i]
+                    distance=distance,
+                    similarity=round(1 / (1 + distance), 4)
                 ))
 
         return SearchResponse(

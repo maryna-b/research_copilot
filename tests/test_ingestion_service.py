@@ -69,3 +69,15 @@ def test_chunk_text_empty():
     chunks = chunk_text(text, chunk_size=1000, overlap=100)
 
     assert len(chunks) == 0 or (len(chunks) == 1 and chunks[0] == "")
+
+
+def test_chunk_text_sentence_boundary():
+    """Test that chunks snap to sentence boundaries when one falls within 200 chars of the cut point."""
+    # Natural cut at 1000 lands mid-word; sentence ends 5 chars later at "end. "
+    text = ("A" * 1000) + "end. " + ("B" * 500)
+    chunks = chunk_text(text, chunk_size=1000, overlap=100)
+
+    # First chunk should extend to include the sentence ending, not cut at 1000
+    assert chunks[0].endswith("end. ")
+    # The remaining text should still be covered
+    assert "B" in chunks[-1]
