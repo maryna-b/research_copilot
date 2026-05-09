@@ -1,7 +1,6 @@
 version: '3.8'
 
 services:
-  # PostgreSQL Database
   postgres:
     image: postgres:15-alpine
     container_name: research-copilot-db
@@ -21,47 +20,6 @@ services:
     networks:
       - research-copilot-network
 
-  # Ingestion Service
-  ingestion-service:
-    build:
-      context: .
-      dockerfile: services/ingestion_service/Dockerfile
-    container_name: research-copilot-ingestion
-    ports:
-      - "8001:8001"
-    environment:
-      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
-      EMBEDDINGS_SERVICE_URL: http://embeddings-service:8003
-    depends_on:
-      postgres:
-        condition: service_healthy
-      embeddings-service:
-        condition: service_started
-    networks:
-      - research-copilot-network
-    restart: unless-stopped
-
-  # API Gateway
-  api-gateway:
-    build:
-      context: .
-      dockerfile: services/api_gateway/Dockerfile
-    container_name: research-copilot-gateway
-    ports:
-      - "8000:8000"
-    environment:
-      INGESTION_SERVICE_URL: http://ingestion-service:8001
-      EMBEDDINGS_SERVICE_URL: http://embeddings-service:8003
-      API_KEY: ${API_KEY:-dev-key-change-in-production}
-      MAX_FILE_SIZE: ${MAX_FILE_SIZE:-52428800}
-    depends_on:
-      - ingestion-service
-      - embeddings-service
-    networks:
-      - research-copilot-network
-    restart: unless-stopped
-
-  # Chroma Vector Database
   chroma:
     image: chromadb/chroma:0.5.23
     container_name: research-copilot-chroma
@@ -75,20 +33,24 @@ services:
       - research-copilot-network
     restart: unless-stopped
 
-  # Embeddings Service
-  embeddings-service:
+  app:
     build:
       context: .
-      dockerfile: services/embeddings_service/Dockerfile
-    container_name: research-copilot-embeddings
+    container_name: research-copilot-app
     ports:
-      - "8003:8003"
+      - "8000:8000"
     environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+      API_KEY: ${API_KEY:-dev-key-change-in-production}
+      MAX_FILE_SIZE: ${MAX_FILE_SIZE:-52428800}
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
       CHROMA_HOST: chroma
       CHROMA_PORT: 8000
-      OPENAI_API_KEY: ${OPENAI_API_KEY}
     depends_on:
-      - chroma
+      postgres:
+        condition: service_healthy
+      chroma:
+        condition: service_started
     networks:
       - research-copilot-network
     restart: unless-stopped
