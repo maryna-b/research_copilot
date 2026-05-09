@@ -38,17 +38,11 @@ jobs:
 
     - name: Run health checks
       run: |
-        echo "Testing API Gateway..."
+        echo "Testing app health..."
         curl -f http://localhost:8000/health || exit 1
-
-        echo "Testing Ingestion Service..."
-        curl -f http://localhost:8001/health || exit 1
 
         echo "Testing Chroma..."
         curl -f http://localhost:8002/api/v1/heartbeat || exit 1
-
-        echo "Testing Embeddings Service..."
-        curl -f http://localhost:8003/health || exit 1
 
     - name: Test metrics endpoint
       run: |
@@ -60,9 +54,9 @@ jobs:
 
     - name: Check logs for errors
       run: |
-        docker logs research-copilot-gateway
-        docker logs research-copilot-ingestion
-        docker logs research-copilot-embeddings
+        docker logs research-copilot-app
+        docker logs research-copilot-chroma
+        docker logs research-copilot-db
 
     - name: Cleanup
       if: always()

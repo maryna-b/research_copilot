@@ -35,16 +35,14 @@ check_health() {
     fi
 }
 
-check_health "http://localhost:8000/health" "API Gateway"
-check_health "http://localhost:8001/health" "Ingestion Service"
+check_health "http://localhost:8000/health" "App"
 check_health "http://localhost:8002/api/v1/heartbeat" "Chroma"
-check_health "http://localhost:8003/health" "Embeddings Service"
 
 # Check for errors in logs
 echo ""
 echo "3. Checking logs for errors..."
-if docker logs research-copilot-gateway --tail 50 2>&1 | grep -iE "(error|exception|failed)" | grep -v "Exception in ASGI" | grep -v "401" | grep -v "500 Internal Server Error" | grep -v "Unauthorized" | grep -v "Invalid API key" | grep -v "HTTPException" | grep -v "raise HTTPException" | grep -v "fastapi.exceptions.HTTPException" | grep -v "starlette/middleware/errors.py" > /dev/null; then
-    echo -e "${RED}⚠️  Errors found in API Gateway logs${NC}"
+if docker logs research-copilot-app --tail 50 2>&1 | grep -iE "(error|exception|failed)" | grep -v "Exception in ASGI" | grep -v "401" | grep -v "500 Internal Server Error" | grep -v "Unauthorized" | grep -v "Invalid API key" | grep -v "HTTPException" | grep -v "raise HTTPException" | grep -v "fastapi.exceptions.HTTPException" | grep -v "starlette/middleware/errors.py" > /dev/null; then
+    echo -e "${RED}⚠️  Errors found in app logs${NC}"
     FAILED=1
 else
     echo -e "${GREEN}✅ No critical errors in logs${NC}"
