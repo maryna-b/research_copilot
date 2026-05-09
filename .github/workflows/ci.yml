@@ -24,6 +24,7 @@ jobs:
         POSTGRES_PASSWORD=research_pass
         POSTGRES_DB=research_copilot
         API_KEY=test-key
+        ENABLE_METRICS=true
         OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }}
         EOF
 

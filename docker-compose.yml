@@ -43,6 +43,7 @@ services:
       DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
       API_KEY: ${API_KEY:-dev-key-change-in-production}
       MAX_FILE_SIZE: ${MAX_FILE_SIZE:-52428800}
+      ENABLE_METRICS: ${ENABLE_METRICS:-true}
       OPENAI_API_KEY: ${OPENAI_API_KEY}
       CHROMA_HOST: chroma
       CHROMA_PORT: 8000
