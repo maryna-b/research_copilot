@@ -1,252 +1,174 @@
 # Research Copilot
 
-> A personal AI research assistant that ingests documents, indexes them semantically, and performs intelligent search, summarization, and question-answering.
+> A personal AI research assistant that ingests PDF papers, indexes them semantically, and lets you search across them with natural language.
 
 ---
 
-## What Does It Do?
+## What It Does
 
-Transform how you interact with research papers:
-
-- **Upload** PDFs or documents → automatic text extraction and indexing
-- **Search** semantic search (meaning-based, not just keywords)
-- **Ask questions** → get AI-generated answers with exact citations and page references
-- **Summarize** papers with structured notes (methods, results, limitations)
-- **Compare** multiple papers side-by-side
-- **Track** sources and verify factuality
-
----
-
-## Current Features 
-
-### Document Processing
-- ✅ PDF upload via authenticated API
-- ✅ Text extraction with pdfplumber
-- ✅ Sentence-boundary aware text chunking
-- ✅ Metadata storage in PostgreSQL
-
-### Search & Embeddings
-- ✅ Vector embeddings via OpenAI `text-embedding-3-small`
-- ✅ Semantic search with Chroma vector database
-- ✅ Relevance scores (0–1) alongside raw distances in search results
-
-### Infrastructure
-- ✅ API key authentication
-- ✅ Structured logging with request IDs
-- ✅ Prometheus metrics and monitoring
-- ✅ Comprehensive error handling
-- ✅ Input validation
-- ✅ Docker containerization
-
-### Coming Soon 
-- 🚧 `/ask` question-answering endpoint (RAG)
-- 🚧 Source citations and page references
-- 🚧 Multi-agent workflows (LangGraph)
+- **Upload** PDFs → automatic text extraction and chunking
+- **Search** across all uploaded papers with semantic (meaning-based) search
+- **Relevance scores** on every result so you can gauge match quality at a glance
 
 ---
 
 ## Architecture
 
+Single FastAPI app backed by PostgreSQL (metadata) and Chroma (vector embeddings).
+
 ```
-Client → API Gateway (8000) ┬→ Ingestion Service (8001) → PostgreSQL (5432)
-                            │          ↓
-                            │  Embeddings Service (8003)
-                            │          ↓
-                            └→ Chroma (8002)
+Client → app (8000)
+           ├── PostgreSQL (5432) — document metadata
+           └── Chroma (8002)    — vector embeddings
 ```
 
-**Services:**
-- **API Gateway** (Port 8000) - Routing, authentication, logging, metrics
-- **Ingestion Service** (Port 8001) - PDF processing, chunking, metadata storage
-- **Embeddings Service** (Port 8003) - OpenAI embeddings, semantic search
-- **PostgreSQL** (Port 5432) - Document metadata
-- **Chroma** (Port 8002) - Vector embeddings store
+**Stack:** FastAPI · PostgreSQL · SQLAlchemy · Chroma · OpenAI embeddings · pdfplumber · Prometheus
 
 ---
 
 ## Quick Start
 
-### Prerequisites
-- Docker & Docker Compose
-- Python 3.11+ 
-
-### Run with Docker Compose
+### With Docker Compose (recommended)
 
 ```bash
-# Start all services
+cp .env.example .env   # fill in OPENAI_API_KEY and Postgres credentials
 docker-compose up --build
 ```
 
-**Services available at:**
-- API Gateway: http://localhost:8000/docs
-- Ingestion Service: http://localhost:8001/docs
-- Metrics: http://localhost:8000/metrics
+App available at: http://localhost:8000/docs
 
-### Test the API
+### Local (no Docker for the app)
 
-**Health check (public):**
-```bash
-curl http://localhost:8000/health
-```
-
-**Upload document (protected):**
-```bash
-curl -X POST http://localhost:8000/upload \
-  -H "X-API-Key: dev-key-change-in-production" \
-  -F "file=@document.pdf"
-```
-
-**Response:**
-```json
-{
-  "document_id": "uuid-here",
-  "filename": "document.pdf",
-  "total_chunks": 15,
-  "chunks": [...]
-}
-```
-
----
-
-## API Endpoints
-
-### Public (No Auth)
-- `GET /health` - Service health check
-- `GET /metrics` - Prometheus metrics
-- `GET /docs` - Interactive API documentation
-
-### Protected (API Key Required)
-- `POST /upload` - Upload and process PDF
-- `POST /search` - Semantic search across indexed documents
-- `GET /info` - Service information
-
-**Authentication:** Include header `X-API-Key: key`
-
-## Tech Stack
-
-- **FastAPI** - Async web framework
-- **PostgreSQL** - Relational database
-- **SQLAlchemy** - ORM
-- **pdfplumber** - PDF text extraction
-- **Chroma** - Vector database
-- **OpenAI** - Text embeddings (`text-embedding-3-small`)
-- **Prometheus** - Metrics
-- **Docker Compose** - Container orchestration
-
-### Planned
-- **LangChain / LangGraph** - LLM orchestration and multi-agent workflows
-- **OpenAI GPT-4** - Question answering
-
----
-
-## Local Development (No Docker)
-
-```bash
-# Create virtual environment
-python -m venv venv
-source venv/bin/activate  # Windows: venv\Scripts\activate
-
-# Install dependencies
-pip install -r requirements.txt
-
-# Copy and fill in your env vars (OPENAI_API_KEY is required)
-cp .env.example .env
-```
-
-Start the infrastructure (PostgreSQL + Chroma still need Docker):
+PostgreSQL and Chroma still need Docker:
 
 ```bash
 docker run -d -p 5432:5432 \
   -e POSTGRES_USER=research_user \
   -e POSTGRES_PASSWORD=research_pass \
-  -e POSTGRES_DB=research_db \
+  -e POSTGRES_DB=research_copilot \
   postgres:15-alpine
 
-docker run -d -p 8002:8000 chromadb/chroma
+docker run -d -p 8002:8000 chromadb/chroma:0.5.23
 ```
 
-Then start each service in a separate terminal:
+Then run the app:
 
 ```bash
-# Terminal 1 — Ingestion Service
-cd services/ingestion_service && fastapi dev main.py --port 8001
-
-# Terminal 2 — Embeddings Service
-cd services/embeddings_service && fastapi dev main.py --port 8003
-
-# Terminal 3 — API Gateway
-cd services/api_gateway && fastapi dev main.py --port 8000
+python -m venv venv && source venv/bin/activate
+pip install -r requirements.txt
+cd app && uvicorn main:app --reload --port 8000
 ```
 
-**Services available at:**
-- API Gateway + docs: http://localhost:8000/docs
-- Ingestion Service: http://localhost:8001/docs
-- Embeddings Service: http://localhost:8003/docs
+---
+
+## Environment Variables
+
+| Variable | Default | Description |
+|---|---|---|
+| `API_KEY` | `dev-key-change-in-production` | Authentication key for protected endpoints |
+| `DATABASE_URL` | `sqlite:///./documents.db` | PostgreSQL connection string |
+| `OPENAI_API_KEY` | — | Required for embeddings |
+| `CHROMA_HOST` | `localhost` | Chroma server host |
+| `CHROMA_PORT` | `8000` | Chroma server port |
+| `MAX_FILE_SIZE` | `52428800` (50MB) | Upload size limit in bytes |
+| `CHUNK_SIZE` | `1000` | Characters per text chunk |
+| `CHUNK_OVERLAP` | `100` | Overlap between chunks |
+
+---
+
+## API Endpoints
+
+### Public (no auth)
+| Method | Path | Description |
+|---|---|---|
+| `GET` | `/health` | Health check |
+| `GET` | `/metrics` | Prometheus metrics |
+| `GET` | `/docs` | Interactive API docs |
+
+### Protected (`X-API-Key` header required)
+| Method | Path | Description |
+|---|---|---|
+| `POST` | `/upload` | Upload and index a PDF |
+| `POST` | `/search` | Semantic search across documents |
+| `GET` | `/documents` | List all uploaded documents |
+| `GET` | `/info` | App version info |
+
+### Example usage
+
+```bash
+# Upload a PDF
+curl -X POST http://localhost:8000/upload \
+  -H "X-API-Key: dev-key-change-in-production" \
+  -F "file=@paper.pdf"
+
+# Search
+curl -X POST http://localhost:8000/search \
+  -H "X-API-Key: dev-key-change-in-production" \
+  -H "Content-Type: application/json" \
+  -d '{"query": "transformer attention mechanism", "n_results": 5}'
+
+# List documents
+curl http://localhost:8000/documents \
+  -H "X-API-Key: dev-key-change-in-production"
+```
 
 ---
 
 ## Testing
 
 ```bash
-# Run all tests
-pytest
+venv/bin/pytest tests/ -v
 
 # With coverage
-pytest --cov=services --cov-report=html
+venv/bin/pytest tests/ --cov=app --cov-report=html
 ```
 
 ---
 
-## Monitoring
-
-### Prometheus Metrics
-
-- API Gateway: http://localhost:8000/metrics
-- Ingestion Service: http://localhost:8001/metrics
-
-### Logs
+## Logs & Monitoring
 
 ```bash
-# View logs
-docker-compose logs -f
+# Docker logs
+docker-compose logs -f app
 
-# Specific service
-docker-compose logs -f api-gateway
+# Prometheus metrics
+curl http://localhost:8000/metrics
 ```
+
+Every request gets a unique `X-Request-ID` header for tracing across logs.
+
 ---
 
-## Troubleshooting
+## Project Structure
 
-**Port already in use:**
-```bash
-# Windows: netstat -ano | findstr :8000
-# Mac/Linux: lsof -i :8000
+```
+app/
+├── main.py        # FastAPI app and all routes
+├── auth.py        # API key middleware
+├── config.py      # Settings from environment variables
+├── database.py    # SQLAlchemy engine and session
+├── models.py      # Document ORM model
+├── schemas.py     # Pydantic request/response schemas
+├── ingestion.py   # PDF extraction and chunking logic
+├── embeddings.py  # OpenAI embeddings and Chroma search
+├── utils.py       # chunk_text utility
+└── Dockerfile
+tests/
+docker-compose.yml
+requirements.txt
 ```
 
-**Services won't start:**
-```bash
-docker-compose logs api-gateway
-docker-compose up --build
-```
 ---
 
 ## Roadmap
 
-### ✅ Completed
-- [x] Microservices architecture
-- [x] PostgreSQL integration
-- [x] PDF processing and sentence-boundary aware chunking
-- [x] Authentication and logging
-- [x] Metrics and monitoring
-- [x] Chroma vector database integration
+### Done
+- [x] PDF upload, text extraction, sentence-boundary aware chunking
+- [x] OpenAI vector embeddings stored in Chroma
 - [x] Semantic search with relevance scores
+- [x] API key auth, structured logging, Prometheus metrics
 
-### 🚧 In Progress
-- [ ] `/ask` RAG endpoint (question answering with citations)
-
-### 📅 Planned
-- [ ] Document summarization
-- [ ] Paper comparison
-- [ ] Agent workflows (LangGraph)
-- [ ] Cloud deployment
+### Next
+- [ ] `/ask` endpoint — RAG question answering with citations
+- [ ] LangGraph multi-agent workflows
 - [ ] Web UI
