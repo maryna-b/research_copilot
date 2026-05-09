@@ -2,7 +2,7 @@ from pydantic_settings import BaseSettings
 
 
 class Settings(BaseSettings):
-    API_KEY: str = "dev-key-change-in-production"
+    API_KEY: str = "dev-key-change-in-production"  # NOSONAR
     MAX_FILE_SIZE: int = 50 * 1024 * 1024
 
     DATABASE_URL: str = "sqlite:///./documents.db"

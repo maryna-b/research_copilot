@@ -16,6 +16,8 @@ logger = logging.getLogger(__name__)
 
 ALLOWED_EXTENSIONS = {".pdf"}
 
+DbSession = Annotated[Session, Depends(get_db)]
+
 
 @router.get("/health")
 async def health():
@@ -28,7 +30,7 @@ async def info():
 
 
 @router.get("/documents", response_model=list[DocumentListItem])
-async def list_documents(db: Session = Depends(get_db)):
+async def list_documents(db: DbSession):
     docs = db.query(Document).order_by(Document.uploaded_at.desc()).all()
     return [
         {
@@ -51,7 +53,7 @@ async def list_documents(db: Session = Depends(get_db)):
         "500": {"description": "Internal server error while processing upload"},
     },
 )
-async def upload(file: Annotated[UploadFile, File(...)], db: Session = Depends(get_db)):
+async def upload(file: Annotated[UploadFile, File(...)], db: DbSession):
     logger.info("Upload started")
 
     if not file.filename:
