@@ -1,6 +1,7 @@
 from fastapi import FastAPI, UploadFile, File, HTTPException, Request, Response
 from fastapi.responses import JSONResponse
 from fastapi.openapi.utils import get_openapi
+from typing import Annotated
 import logging
 import uuid
 import time
@@ -131,9 +132,17 @@ async def list_documents():
         db.close()
 
 
-@app.post("/upload", response_model=ProcessPDFResponse)
-async def upload(file: UploadFile = File(...)):
-    logger.info(f"Upload started: {file.filename}")
+@app.post(
+    "/upload",
+    response_model=ProcessPDFResponse,
+    responses={
+        "400": {"description": "Invalid request (missing filename, invalid extension, or empty file)"},
+        "413": {"description": "Uploaded file exceeds maximum allowed size"},
+        "500": {"description": "Internal server error while processing upload"},
+    },
+)
+async def upload(file: Annotated[UploadFile, File(...)]):
+    logger.info("Upload started")
 
     if not file.filename:
         raise HTTPException(status_code=400, detail="Filename is required")
@@ -159,11 +168,18 @@ async def upload(file: UploadFile = File(...)):
     finally:
         db.close()
 
-    logger.info(f"Upload successful: {file.filename} — {result['total_chunks']} chunks")
+    logger.info(f"Upload successful: {result['total_chunks']} chunks")
     return result
 
 
-@app.post("/search", response_model=SearchResponse)
+@app.post(
+    "/search",
+    response_model=SearchResponse,
+    responses={
+        "404": {"description": "Search index not found. Upload a document first."},
+        "500": {"description": "Internal server error while executing search"},
+    },
+)
 async def search(request: SearchRequest):
     logger.info(f"Search started: query='{request.query}' n_results={request.n_results}")
 
