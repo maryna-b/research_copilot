@@ -1,17 +1,17 @@
-import os
+from pydantic_settings import BaseSettings
 
 
-class Settings:
-    API_KEY: str = os.getenv("API_KEY", "dev-key-change-in-production")
-    MAX_FILE_SIZE: int = int(os.getenv("MAX_FILE_SIZE", str(50 * 1024 * 1024)))
+class Settings(BaseSettings):
+    API_KEY: str = "dev-key-change-in-production"  # NOSONAR
+    MAX_FILE_SIZE: int = 50 * 1024 * 1024
 
-    DATABASE_URL: str = os.getenv("DATABASE_URL", "sqlite:///./documents.db")
-    CHUNK_SIZE: int = int(os.getenv("CHUNK_SIZE", "1000"))
-    CHUNK_OVERLAP: int = int(os.getenv("CHUNK_OVERLAP", "100"))
+    DATABASE_URL: str = "sqlite:///./documents.db"
+    CHUNK_SIZE: int = 1000
+    CHUNK_OVERLAP: int = 100
 
-    OPENAI_API_KEY: str = os.getenv("OPENAI_API_KEY", "")
-    CHROMA_HOST: str = os.getenv("CHROMA_HOST", "localhost")
-    CHROMA_PORT: int = int(os.getenv("CHROMA_PORT", "8000"))
+    OPENAI_API_KEY: str = ""
+    CHROMA_HOST: str = "localhost"
+    CHROMA_PORT: int = 8000
 
 
 settings = Settings()
