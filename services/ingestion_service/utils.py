@@ -1,5 +1,9 @@
+"""
+Utility functions for text processing.
+"""
 import re
 
+# Matches a sentence-ending punctuation followed by whitespace
 _SENTENCE_END = re.compile(r'[.!?]\s')
 
 
@@ -7,9 +11,17 @@ def chunk_text(text: str, chunk_size: int = 1000, overlap: int = 100) -> list[st
     """
     Split text into overlapping chunks, snapping boundaries to sentence ends.
 
-    After the character-count cut point, looks ahead up to 200 chars for the
-    nearest sentence boundary (.!? followed by whitespace) to avoid splitting
-    mid-sentence. Falls back to exact character cut if none is found.
+    After computing the character-count cut point, looks ahead up to 200 chars
+    for the nearest sentence boundary (.!? followed by whitespace) to avoid
+    splitting mid-sentence. Falls back to exact character cut if none is found.
+
+    Args:
+        text: The text to chunk
+        chunk_size: Target size of each chunk in characters (default: 1000)
+        overlap: Number of characters to overlap between chunks (default: 100)
+
+    Returns:
+        List of text chunks
     """
     if not text:
         return []
